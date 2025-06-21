@@ -1,7 +1,11 @@
-import { Context, Schema } from "koishi";
+import { Context, Schema, valueMap } from "koishi";
 import { h } from "koishi";
 export const name = "shds-signin";
-
+import * as echarts from 'echarts';
+import { createCanvas, loadImage } from "canvas";
+import puppeteer from 'puppeteer';
+import fs from "fs";
+import path from "path";
 export interface Config {}
 
 export const Config: Schema<Config> = Schema.object({});
@@ -22,6 +26,7 @@ export interface Schedule {
   fortune: string;
   testList: string;
 }
+
 let signinList = [
   "睡觉",
   "躺平",
@@ -55,12 +60,13 @@ export function apply(ctx: Context) {
     fortune: "text",
     testList: "text",
   });
+
   ctx.command("signin").action(async (e) => {
     console.log(
       new Date(new Date().toLocaleString().split(" ")[0]).toLocaleString()
     );
     const data = await ctx.database.get("schedule", {
-      time: [new Date().toLocaleString().split(" ")[0]],
+      time: [new Date(new Date().toLocaleString().split(" ")[0]).toLocaleString()],
     });
     if (data.length) {
       for (let i = 0; i < data.length; i++) {
@@ -111,7 +117,7 @@ export function apply(ctx: Context) {
     ctx.database.upsert("schedule", [
       {
         user: e.session.userId,
-        time: new Date().toLocaleString().split(" ")[0],
+        time: new Date(new Date().toLocaleString().split(" ")[0]).toLocaleString(),
         rnum: n,
         res: r,
         dateTime: new Date(),
@@ -125,6 +131,83 @@ export function apply(ctx: Context) {
       )} <br/> 忌：${bad.join(",")}<br/>  &&& <br/> ${test} </>`
     );
     return;
+  });
+
+
+  ctx.command("getTotal").action(async (e) => {
+    const data = await ctx.database.get("schedule", { user: e.session.userId });
+    console.log(e.session.userId);
+    console.log(data);
+    const total = [
+      { value: 0, name: '中平' },
+      { value: 0, name: '小吉' },
+      { value: 0, name: '中吉' },
+      { value: 0, name: '大吉' },
+      { value: 0, name: '小凶' },
+      { value: 0, name: '中凶' },
+      { value: 0, name: '大凶' },
+    ];
+
+    data.forEach(element => {
+      switch (element.res) {
+        case '中平':
+          total[0].value++;
+          break;
+        case '小吉':
+          total[1].value++;
+          break;
+        case '中吉':
+          total[2].value++;
+          break;
+        case '大吉':
+          total[3].value++;
+          break;
+        case '小凶':
+          total[4].value++;
+          break;
+        case '中凶':
+          total[5].value++;
+          break;
+        case '大凶':
+          total[6].value++;
+          break;
+      }
+    });
+    const dstring =
+    `
+<>
+      总计： ${data.length} <br />
+      中平： ${total[0].value} <br />
+      小吉： ${total[1].value} <br />
+      中吉： ${total[2].value} <br />
+      大吉： ${total[3].value} <br />
+      小凶： ${total[4].value} <br />
+      中凶： ${total[5].value} <br />
+      大凶： ${total[6].value}
+    </>
+    `
+    e.session.send(dstring);
+
+
+  });
+  ctx.command("getRecent").action(async (e) => {
+    let data = await ctx.database.get("schedule", { user: e.session.userId });
+    //逆序
+    data.sort((a,b)=>  {
+      return a.id - b.id > 0 ? -1 : 1
+    })
+    const list = [];
+    for (let i = 0; i < data.length && i<6; i++) {
+      list.push(data[i]);
+    }
+    const dstring =
+      `
+<>
+  最近签到： <br />
+  ${list.map(item => `${item.time.split(" ")[0]} 运势：${item.res}`).join('<br />')}
+</>
+    `
+    e.session.send(dstring);
   });
 }
 
