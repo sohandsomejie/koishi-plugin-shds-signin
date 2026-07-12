@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-shds-signin",
-  "description": "签到",
-  "version": "0.0.24",
+  "description": "组织签到，自用。 1.1.0增加要塞查询",
+  "version": "1.1.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -9,7 +9,6 @@
     "dist"
   ],
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
@@ -18,10 +17,5 @@
   ],
   "peerDependencies": {
     "koishi": "^4.18.0"
-  },
-  "dependencies": {
-    "echarts": "^5.5.1",
-    "jsdom": "^25.0.1",
-    "puppeteer": "^23.9.0"
   }
 }
