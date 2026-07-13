@@ -6,7 +6,6 @@ export interface Config {
   fortuneLevels: FortuneLevel[]
   activities: string[]
   testTexts: string[]
-  fortressInitTime: string
 }
 
 interface FortuneLevel {
@@ -53,10 +52,6 @@ export const Config = Schema.object({
     "好好睡觉补身体 容易做噩梦",
     "随便一发被人夸 会被当做卖面膜的"
   ]),
-  fortressInitTime: Schema.string()
-    .description('跨服要塞初始化时间 (格式: YYYY-MM-DD)')
-    .default('2025-6-7')
-    .required(),
 });
 
 declare module "koishi" {
@@ -84,36 +79,6 @@ function getTodayDateString(): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today.toLocaleString();
-}
-
-// 计算跨服要塞相关信息的函数
-function calculateFortressInfo(initTime: string) {
-  const initDate = new Date(initTime);
-  const now = new Date();
-
-  // 计算从初始化时间到现在的总周数
-  const diffTime = now.getTime() - initDate.getTime();
-  const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
-
-  // 计算当前是第几轮 (每5周一轮)
-  const currentRound = Math.floor(diffWeeks / 5);
-  const weekInRound = diffWeeks % 5;
-
-  // 判断下周是否是跨服要塞周
-  const isNextWeekCrossServer = weekInRound === 4;
-  // 计算上次跨服要塞时间
-  let lastCrossServerTime: Date | null = null;
-  lastCrossServerTime = new Date(initDate);
-  lastCrossServerTime.setDate(initDate.getDate() + (currentRound-1) * 7 * 5);
-  if(currentRound<=0){
-    lastCrossServerTime = null;
-  }
-  return {
-    isNextWeekCrossServer,
-    lastCrossServerTime,
-    currentRound,
-    weekInRound: weekInRound +1, // 转换为1-5的周数
-  };
 }
 
 export function apply(ctx: Context, config: Config) {
@@ -250,60 +215,5 @@ export function apply(ctx: Context, config: Config) {
       ].join("\n");
     });
 
-    // 新增跨服要塞相关命令
-    ctx.command("fortress")
-      .alias("要塞")
-      .action(() => {
-        const fortressInfo = calculateFortressInfo(config.fortressInitTime);
-        let response = [
-          `🏰 跨服要塞信息 🏰`,
-          `━━━━━━━━━━━━`,
-        ];
-        if (fortressInfo.isNextWeekCrossServer) {
-          response.push(
-            `🔥 本周六(20:00-20:30)抢是跨服要塞！`,
-            `🚨 请务必准时参加抢跨服！`,
-            `━━━━━━━━━━━━`,
-          );
-        } else {
-          response.push(`本周是常规要塞战`,`━━━━━━━━━━━━`,);
-        }
-
-        response.push(
-           `当前是第 ${fortressInfo.currentRound + 1} 轮的第 ${fortressInfo.weekInRound} 周`,
-          `下周${fortressInfo.isNextWeekCrossServer ? '是' : '不是'}跨服要塞周`,
-        )
-        if (fortressInfo.lastCrossServerTime) {
-          response.push(`上次跨服要塞时间: ${fortressInfo.lastCrossServerTime.toLocaleDateString()}`);
-        } else {
-          response.push(`上次跨服要塞时间: 暂无记录`);
-        }
-
-        response.push(
-          `跨服要塞规则: 在四次常规的本服要塞战后，第五周周六20:00-20:30`,
-          `初始化时间: ${config.fortressInitTime}`,
-          `━━━━━━━━━━━━`
-        );
-
-        return response.join("\n");
-      });
-
-    // 单独查询下周是否是跨服要塞周
-    ctx.command("fortress.next")
-      .alias("下周要塞")
-      .action(() => {
-        const { isNextWeekCrossServer } = calculateFortressInfo(config.fortressInitTime);
-        return `下周${isNextWeekCrossServer ? '是' : '不是'}跨服要塞周`;
-      });
-
-    // 单独查询上次跨服要塞时间
-    ctx.command("fortress.last")
-      .alias("上次要塞")
-      .action(() => {
-        const { lastCrossServerTime } = calculateFortressInfo(config.fortressInitTime);
-        return lastCrossServerTime
-          ? `上次跨服要塞时间: ${lastCrossServerTime.toLocaleDateString()}`
-          : `暂无上次跨服要塞记录`;
-      });
   }))
 }

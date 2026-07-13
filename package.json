@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-shds-signin",
-  "description": "组织签到，自用。 1.1.0增加要塞查询",
+  "description": "组织签到，自用。",
   "version": "1.1.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
