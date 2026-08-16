@@ -12,6 +12,7 @@ import {
   parseFortuneItems,
   parseTextItems,
   resolveFortuneItems,
+  selectRecentSignins,
   validateConfig,
 } from '../src/index'
 
@@ -203,5 +204,16 @@ test('最近签到展示点数并支持空状态', () => {
     '━━━━━━━━━━━━',
     '暂无签到记录',
     '━━━━━━━━━━━━',
+  ])
+})
+
+test('最近签到按日期排序而不是按迁移后的自增 ID 排序', () => {
+  assert.deepEqual(selectRecentSignins([
+    { id: 110, time: '2026-08-14', res: '中平', rnum: 50 },
+    { id: 3, time: '2026-08-16', res: '大吉', rnum: 96 },
+    { id: 109, time: '2026-08-15', res: '小吉', rnum: 70 },
+  ], 2).map(item => item.time), [
+    '2026-08-16',
+    '2026-08-15',
   ])
 })

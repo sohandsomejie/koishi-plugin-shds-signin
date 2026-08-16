@@ -31,7 +31,7 @@ export interface FortuneItems {
 }
 
 export type SigninResult = Pick<Schedule, 'rnum' | 'res' | 'fortune' | 'testList'>
-export type RecentSignin = Pick<Schedule, 'time' | 'res' | 'rnum'>
+export type RecentSignin = Pick<Schedule, 'time' | 'res' | 'rnum'> & Partial<Pick<Schedule, 'id'>>
 
 // 配置界面定义。文本列表使用 textarea，减少逐项编辑数组的操作成本。
 export const Config = Schema.object({
@@ -185,6 +185,13 @@ export function formatRecentLines(username: string | undefined, records: RecentS
       : ['暂无签到记录']),
     MESSAGE_DIVIDER,
   ];
+}
+
+/** 按签到日期选择最近记录，避免迁移数据的自增 ID 影响时间顺序。 */
+export function selectRecentSignins(records: RecentSignin[], limit = 6): RecentSignin[] {
+  return [...records]
+    .sort((a, b) => b.time.localeCompare(a.time) || (b.id ?? 0) - (a.id ?? 0))
+    .slice(0, limit);
 }
 
 /** 将排在前四位的活动解析为最终宜忌结果。 */
@@ -352,9 +359,7 @@ export function apply(ctx: Context, config: Config) {
     ctx.command("getRecent").action(async ({ session }) => {
       const user = getUserKey(session.platform, session.userId);
       const data = await ctx.database.get("shds_signin", { user });
-      const recent = data
-        .sort((a, b) => b.id - a.id)
-        .slice(0, 6)
+      const recent = selectRecentSignins(data);
       return formatRecentLines(session.username, recent).join("\n");
     });
 
