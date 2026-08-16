@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-shds-signin",
-  "description": "组织签到，自用。",
-  "version": "1.1.0",
+  "description": "支持每日运势、宜忌签语和历史统计的 Koishi 签到插件",
+  "version": "1.2.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -13,7 +13,9 @@
     "chatbot",
     "koishi",
     "plugin",
-    "signin"
+    "signin",
+    "fortune",
+    "daily"
   ],
   "peerDependencies": {
     "koishi": "^4.18.0"
