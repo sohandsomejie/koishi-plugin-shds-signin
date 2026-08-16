@@ -5,6 +5,8 @@ export const name = "shds-signin";
 const ALL_GOOD = "万事皆宜";
 const ALL_BAD = "诸事不宜";
 const MESSAGE_DIVIDER = "━━━━━━━━━━━━";
+// QQ 会裁掉纯空白首行，零宽字符用于让自动用户提及后稳定换行。
+const LEADING_BLANK_LINE = "\u200B";
 
 /** 插件在 Koishi 控制台中暴露的配置。 */
 export interface Config {
@@ -144,9 +146,9 @@ export function formatFortuneLines({ good, bad }: FortuneItems): string[] {
 
 /** 生成新签到和重复签到共用的分段结果文本。 */
 export function formatSigninLines(result: SigninResult, isNew: boolean): string[] {
-  // QQ 可能忽略提及元素后的首个换行，额外空行确保标题独立显示。
+  // 首行占位确保标题与 QQ 用户提及分行显示。
   return [
-    '',
+    LEADING_BLANK_LINE,
     isNew ? '🎉 签到成功 🎉' : '✨ 今日已签到 ✨',
     MESSAGE_DIVIDER,
     `今日运势：${result.res} (${result.rnum}点)`,
@@ -165,6 +167,7 @@ export function formatTotalLines(
 ): string[] {
   const title = username ? `${username} 的签到统计` : '你的签到统计';
   return [
+    LEADING_BLANK_LINE,
     `📊 ${title}`,
     MESSAGE_DIVIDER,
     `总签到次数：${totalCount}次`,
@@ -178,6 +181,7 @@ export function formatTotalLines(
 export function formatRecentLines(username: string | undefined, records: RecentSignin[]): string[] {
   const title = username ? `${username} 的最近签到` : '你的最近签到';
   return [
+    LEADING_BLANK_LINE,
     `📅 ${title}`,
     MESSAGE_DIVIDER,
     ...(records.length
