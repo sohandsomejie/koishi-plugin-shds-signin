@@ -3,6 +3,9 @@ import { test } from 'node:test'
 import {
   Config,
   formatFortuneLines,
+  formatRecentLines,
+  formatSigninLines,
+  formatTotalLines,
   getFortuneCandidates,
   getTodayDateString,
   getUserKey,
@@ -135,4 +138,55 @@ test('特殊宜忌的数据库格式可以正确还原', () => {
     good: [],
     bad: ['诸事不宜'],
   })
+})
+
+test('新签到结果使用紧凑的统一格式', () => {
+  assert.deepEqual(formatSigninLines({
+    rnum: 96,
+    res: '大吉',
+    fortune: '散步,听歌|熬夜,单排',
+    testList: '稳住自己的节奏，好结果正在靠近',
+  }, true), [
+    '✅ 签到成功',
+    '🎲 今日运势：大吉 · 96 点',
+    '🌸 宜：散步、听歌',
+    '🚫 忌：熬夜、单排',
+    '📝 今日签语：稳住自己的节奏，好结果正在靠近',
+  ])
+})
+
+test('重复签到沿用原结果并显示状态', () => {
+  assert.deepEqual(formatSigninLines({
+    rnum: 20,
+    res: '小凶',
+    fortune: '|诸事不宜',
+    testList: '今天宜慢不宜急，稳稳推进就是胜利',
+  }, false), [
+    '📌 今日已签到',
+    '🎲 今日运势：小凶 · 20 点',
+    '🚫 忌：诸事不宜',
+    '📝 今日签语：今天宜慢不宜急，稳稳推进就是胜利',
+  ])
+})
+
+test('签到统计展示累计天数和等级明细', () => {
+  assert.deepEqual(formatTotalLines('小明', 3, { 大吉: 2, 中平: 1 }), [
+    '📊 小明的签到统计',
+    '累计签到：3 天',
+    '• 大吉：2 次',
+    '• 中平：1 次',
+  ])
+})
+
+test('最近签到展示点数并支持空状态', () => {
+  assert.deepEqual(formatRecentLines('小明', [
+    { time: '2026-08-16', res: '大吉', rnum: 96 },
+  ]), [
+    '📅 小明的最近签到',
+    '• 2026-08-16｜大吉 · 96 点',
+  ])
+  assert.deepEqual(formatRecentLines(undefined, []), [
+    '📅 你的最近签到',
+    '暂无签到记录',
+  ])
 })

@@ -29,6 +29,9 @@ export interface FortuneItems {
   bad: string[]
 }
 
+export type SigninResult = Pick<Schedule, 'rnum' | 'res' | 'fortune' | 'testList'>
+export type RecentSignin = Pick<Schedule, 'time' | 'res' | 'rnum'>
+
 // 配置界面定义。文本列表使用 textarea，减少逐项编辑数组的操作成本。
 export const Config = Schema.object({
   fortuneLevels: Schema.array(
@@ -138,6 +141,41 @@ export function formatFortuneLines({ good, bad }: FortuneItems): string[] {
   ];
 }
 
+/** 生成新签到和重复签到共用的结果文本。 */
+export function formatSigninLines(result: SigninResult, isNew: boolean): string[] {
+  return [
+    isNew ? '✅ 签到成功' : '📌 今日已签到',
+    `🎲 今日运势：${result.res} · ${result.rnum} 点`,
+    ...formatFortuneLines(parseFortuneItems(result.fortune)),
+    `📝 今日签语：${result.testList}`,
+  ];
+}
+
+/** 生成签到次数统计文本。 */
+export function formatTotalLines(
+  username: string | undefined,
+  totalCount: number,
+  totals: Record<string, number>,
+): string[] {
+  const displayName = username || '你';
+  return [
+    `📊 ${displayName}的签到统计`,
+    `累计签到：${totalCount} 天`,
+    ...Object.entries(totals).map(([name, count]) => `• ${name}：${count} 次`),
+  ];
+}
+
+/** 生成最近签到文本，无记录时返回明确的空状态。 */
+export function formatRecentLines(username: string | undefined, records: RecentSignin[]): string[] {
+  const displayName = username || '你';
+  return [
+    `📅 ${displayName}的最近签到`,
+    ...(records.length
+      ? records.map(item => `• ${item.time}｜${item.res} · ${item.rnum} 点`)
+      : ['暂无签到记录']),
+  ];
+}
+
 /** 将排在前四位的活动解析为最终宜忌结果。 */
 export function resolveFortuneItems(items: string[]): FortuneItems {
   const selected = items.slice(0, 4);
@@ -241,16 +279,9 @@ export function apply(ctx: Context, config: Config) {
       const user = getUserKey(session.platform, session.userId);
       const [existingSignin] = await ctx.database.get("shds_signin", { user, time: today });
       if (existingSignin) {
-        const fortuneItems = parseFortuneItems(existingSignin.fortune);
         return [
           h.at(session.userId),
-          `✨ 今日已签到 ✨`,
-          `━━━━━━━━━━━━`,
-          `今日运势：${existingSignin.res} (${existingSignin.rnum}点)`,
-          ...formatFortuneLines(fortuneItems),
-          `📜 签语：${existingSignin.testList}`,
-          `━━━━━━━━━━━━`,
-          `(每日可签到一次)`
+          ...formatSigninLines(existingSignin, false),
         ].join("\n");
       }
 
@@ -275,28 +306,15 @@ export function apply(ctx: Context, config: Config) {
         // 并发签到触发唯一索引时，返回另一请求已经写入的结果。
         const [concurrentSignin] = await ctx.database.get("shds_signin", { user, time: today });
         if (!concurrentSignin) throw error;
-        const savedFortuneItems = parseFortuneItems(concurrentSignin.fortune);
         return [
           h.at(session.userId),
-          `✨ 今日已签到 ✨`,
-          `━━━━━━━━━━━━`,
-          `今日运势：${concurrentSignin.res} (${concurrentSignin.rnum}点)`,
-          ...formatFortuneLines(savedFortuneItems),
-          `📜 签语：${concurrentSignin.testList}`,
-          `━━━━━━━━━━━━`,
-          `(每日可签到一次)`
+          ...formatSigninLines(concurrentSignin, false),
         ].join("\n");
       }
 
       return [
         h.at(session.userId),
-        `🎉 签到成功 🎉`,
-        `━━━━━━━━━━━━`,
-        `今日运势：${r} (${n}点)`,
-        ...formatFortuneLines({ good, bad }),
-        `📜 签语：${test}`,
-        `━━━━━━━━━━━━`,
-        `(每日可签到一次)`
+        ...formatSigninLines({ rnum: n, res: r, fortune, testList: test }, true),
       ].join("\n");
     });
 
@@ -316,18 +334,7 @@ export function apply(ctx: Context, config: Config) {
         }
       });
 
-      const totalText = Object.entries(total)
-        .map(([name, count]) => `▸ ${name}：${count}次`)
-        .join('\n');
-
-      return [
-        `📊 ${session.username} 的签到统计`,
-        `━━━━━━━━━━━━`,
-        `总签到次数：${data.length}次`,
-        `━━━━━━━━━━━━`,
-        totalText,
-        `━━━━━━━━━━━━`
-      ].join("\n");
+      return formatTotalLines(session.username, data.length, total).join("\n");
     });
 
     // 展示当前用户最近六次签到结果。
@@ -337,15 +344,7 @@ export function apply(ctx: Context, config: Config) {
       const recent = data
         .sort((a, b) => b.id - a.id)
         .slice(0, 6)
-        .map(item => `▸ ${item.time}：${item.res}`)
-        .join('\n');
-
-      return [
-        `📅 ${session.username} 的最近签到`,
-        `━━━━━━━━━━━━`,
-        recent,
-        `━━━━━━━━━━━━`
-      ].join("\n");
+      return formatRecentLines(session.username, recent).join("\n");
     });
 
   }))
