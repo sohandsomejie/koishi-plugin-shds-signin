@@ -157,28 +157,33 @@ export function formatSigninLines(result: SigninResult, isNew: boolean): string[
   ];
 }
 
-/** 生成签到次数统计文本。 */
+/** 生成分段展示的签到次数统计文本。 */
 export function formatTotalLines(
   username: string | undefined,
   totalCount: number,
   totals: Record<string, number>,
 ): string[] {
-  const displayName = username || '你';
+  const title = username ? `${username} 的签到统计` : '你的签到统计';
   return [
-    `📊 ${displayName}的签到统计`,
-    `累计签到：${totalCount} 天`,
-    ...Object.entries(totals).map(([name, count]) => `• ${name}：${count} 次`),
+    `📊 ${title}`,
+    MESSAGE_DIVIDER,
+    `总签到次数：${totalCount}次`,
+    MESSAGE_DIVIDER,
+    ...Object.entries(totals).map(([name, count]) => `▸ ${name}：${count}次`),
+    MESSAGE_DIVIDER,
   ];
 }
 
-/** 生成最近签到文本，无记录时返回明确的空状态。 */
+/** 生成分段展示的最近签到文本，无记录时返回明确的空状态。 */
 export function formatRecentLines(username: string | undefined, records: RecentSignin[]): string[] {
-  const displayName = username || '你';
+  const title = username ? `${username} 的最近签到` : '你的最近签到';
   return [
-    `📅 ${displayName}的最近签到`,
+    `📅 ${title}`,
+    MESSAGE_DIVIDER,
     ...(records.length
-      ? records.map(item => `• ${item.time}｜${item.res} · ${item.rnum} 点`)
+      ? records.map(item => `▸ ${item.time}：${item.res} (${item.rnum}点)`)
       : ['暂无签到记录']),
+    MESSAGE_DIVIDER,
   ];
 }
 
