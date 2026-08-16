@@ -4,6 +4,7 @@ export const name = "shds-signin";
 
 const ALL_GOOD = "万事皆宜";
 const ALL_BAD = "诸事不宜";
+const MESSAGE_DIVIDER = "━━━━━━━━━━━━";
 
 /** 插件在 Koishi 控制台中暴露的配置。 */
 export interface Config {
@@ -141,13 +142,18 @@ export function formatFortuneLines({ good, bad }: FortuneItems): string[] {
   ];
 }
 
-/** 生成新签到和重复签到共用的结果文本。 */
+/** 生成新签到和重复签到共用的分段结果文本。 */
 export function formatSigninLines(result: SigninResult, isNew: boolean): string[] {
+  // QQ 可能忽略提及元素后的首个换行，额外空行确保标题独立显示。
   return [
-    isNew ? '✅ 签到成功' : '📌 今日已签到',
-    `🎲 今日运势：${result.res} · ${result.rnum} 点`,
+    '',
+    isNew ? '🎉 签到成功 🎉' : '✨ 今日已签到 ✨',
+    MESSAGE_DIVIDER,
+    `今日运势：${result.res} (${result.rnum}点)`,
     ...formatFortuneLines(parseFortuneItems(result.fortune)),
-    `📝 今日签语：${result.testList}`,
+    `📜 签语：${result.testList}`,
+    MESSAGE_DIVIDER,
+    '(每日可签到一次)',
   ];
 }
 

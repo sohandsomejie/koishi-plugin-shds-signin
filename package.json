@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-shds-signin",
   "description": "支持每日运势、宜忌签语和历史统计的 Koishi 签到插件",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
